@@ -15,12 +15,20 @@ const uri = process.env.MONGODB_URI;
 // Middleware
 app.use(express.json());
 app.use(cookieParser());
+const allowedOrigins = new Set(
+  (process.env.FRONTEND_ORIGINS ||
+    "https://doctor-tracker-web-platform.vercel.app,http://localhost:3000")
+    .split(",")
+    .map((origin) => origin.trim().replace(/\/+$/, ""))
+    .filter(Boolean),
+);
 app.use(
   cors({
-    origin: [
-      "https://doctor-tracker-web-platform.vercel.app",
-      "http://localhost:3000",
-    ],
+    origin(origin, callback) {
+      // Allow non-browser clients with no Origin and explicitly trusted frontends.
+      if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+      return callback(new Error(`Origin ${origin} is not allowed by CORS`));
+    },
     credentials: true,
   }),
 );
